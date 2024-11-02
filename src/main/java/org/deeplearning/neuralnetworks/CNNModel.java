@@ -29,7 +29,7 @@ public class CNNModel {
             if (layer instanceof ConvolutionalLayer) {
                 ConvolutionalLayer convLayer = (ConvolutionalLayer) layer;
                 INDArray[] featureMaps = convLayer.forward(output);
-                output = concatenateFeatureMaps(featureMaps); // Concatenate or process the feature maps
+                output = concatenateFeatureMaps(featureMaps); // Use optimized concatenation
             } else if (layer instanceof MaxPoolingLayer) {
                 MaxPoolingLayer poolLayer = (MaxPoolingLayer) layer;
                 output = poolLayer.forward(output);
@@ -46,20 +46,21 @@ public class CNNModel {
 
     // Helper method to concatenate feature maps into a single INDArray
     private INDArray concatenateFeatureMaps(INDArray[] featureMaps) {
-        // Assuming feature maps are of the same size
-        int height = featureMaps[0].rows();
-        int width = featureMaps[0].columns();
         int numMaps = featureMaps.length;
+        long height = featureMaps[0].size(2); // Assuming shape is (batchSize, channels, height, width)
+        long width = featureMaps[0].size(3);
 
         // Create a new INDArray to hold the concatenated result
         INDArray concatenated = Nd4j.create(numMaps, height * width);
 
         for (int i = 0; i < numMaps; i++) {
+            // Directly copy the data from each feature map
             concatenated.putRow(i, featureMaps[i].reshape(1, height * width));
         }
 
         return concatenated;
     }
+
 
     // Method to flatten a 3D tensor to a 1D tensor
     private INDArray flatten(INDArray input) {
@@ -156,8 +157,9 @@ public class CNNModel {
                 long endIndex = Math.min(startIndex + batchSize, trainingData.size(0));
 
                 INDArray batchData = trainingData.get(NDArrayIndex.interval(startIndex, endIndex), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                System.out.println(batchData);
                 INDArray batchLabels = trainingLabels.get(NDArrayIndex.interval(startIndex, endIndex), NDArrayIndex.all());
-
+                System.out.println(batchLabels);
                 // Train the model on the current batch
                 train(batchData, batchLabels);
             }

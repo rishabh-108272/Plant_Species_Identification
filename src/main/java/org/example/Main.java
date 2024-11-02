@@ -21,14 +21,14 @@ import java.util.Random;
 
 public class Main {
     private static final Logger log = LoggerFactory.getLogger(Main.class);
-    private static final String RESOURCES_FOLDER_PATH = "C:\\Users\\rishi\\IdeaProjects\\Plant_species_Identification\\src\\main\\resources\\Output";
+    private static final String RESOURCES_FOLDER_PATH = "C:\\Users\\rishi\\IdeaProjects\\rishabh\\src\\main\\resources\\Output";
     private static final int HEIGHT = 128;
     private static final int WIDTH = 128;
     private static final int CHANNELS = 3; // 3 channels for color images
     private static final int N_OUTCOMES = 7; // Number of classes (adjust as per your dataset)
     private static final int BATCH_SIZE = 32;
     private static final int EPOCHS = 10;
-    private static final String[] LABELS = {"bougainvillea", "daisy", "frangipani", "hibiscus", "rose", "sunflower", "zinnia" /* Add other labels here */};
+    private static final String[] LABELS = {"bougainvillea", "daisy", "frangipani", "hibiscus", "rose", "sunflower", "zinnia"};
 
     public static void main(String[] args) throws IOException {
         log.info("Starting the training process...");
@@ -42,10 +42,10 @@ public class Main {
         ActivationFunction RELU = new ReluActivationFunction();
         ActivationFunction SOFTMAX = new SoftmaxActivationFunction();
         // Add layers to the model
-        cnnModel.addLayer(new ConvolutionalLayer(32, 3, 1, 0, RELU)); // Convolutional layer example
-        cnnModel.addLayer(new MaxPoolingLayer(2, 2)); // Max pooling layer
-        cnnModel.addLayer(new FullyConnectedLayer(32 * (HEIGHT / 2) * (WIDTH / 2), 128, RELU)); // Fully connected layer example
-        cnnModel.addLayer(new FullyConnectedLayer(128, N_OUTCOMES, SOFTMAX)); // Output layer
+        cnnModel.addLayer(new ConvolutionalLayer(32, 3, 1, 0, RELU));
+        cnnModel.addLayer(new MaxPoolingLayer(2, 2));
+        cnnModel.addLayer(new FullyConnectedLayer(32 * (HEIGHT / 2) * (WIDTH / 2), 128, RELU));
+        cnnModel.addLayer(new FullyConnectedLayer(128, N_OUTCOMES, SOFTMAX));
 
         // Training Loop
         for (int epoch = 0; epoch < EPOCHS; epoch++) {
@@ -87,6 +87,7 @@ public class Main {
 
         for (File imgFile : folder.listFiles()) {
             if (imgFile.isFile()) {
+                log.info("Loading image: " + imgFile.getName()); // Log the image name
                 BufferedImage originalImage = ImageIO.read(imgFile);
                 if (originalImage != null) {
                     BufferedImage processedImage = augment ? augmentImage(originalImage) : originalImage;
