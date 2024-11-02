@@ -7,12 +7,18 @@
     <list default="true" id="f5efb176-c470-454d-ad1a-3f579a8f3d73" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/CNNModel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/CNNModel.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/Main.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -72,6 +78,7 @@
       <workItem from="1730527839116" duration="171000" />
       <workItem from="1730528526976" duration="320000" />
       <workItem from="1730529241331" duration="4340000" />
+      <workItem from="1730540677328" duration="1117000" />
     </task>
     <servers />
   </component>

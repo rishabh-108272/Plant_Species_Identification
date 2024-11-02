@@ -9,11 +9,11 @@ import java.util.List;
 
 public class CNNModel {
     private List<Object> layers; // A list to hold layers of the model
-    private double learningRate; // Learning rate for weight updates
+    private BatchGradientDescent optimizer; // Optimizer for gradient descent
 
     public CNNModel(double learningRate) {
         this.layers = new ArrayList<>();
-        this.learningRate = learningRate;
+        this.optimizer = new BatchGradientDescent(learningRate);
     }
 
     // Method to add layers to the model
@@ -61,7 +61,6 @@ public class CNNModel {
         return concatenated;
     }
 
-
     // Method to flatten a 3D tensor to a 1D tensor
     private INDArray flatten(INDArray input) {
         return input.reshape(input.size(0), input.size(1) * input.size(2) * input.size(3));
@@ -72,6 +71,10 @@ public class CNNModel {
         Object lastLayer = layers.get(layers.size() - 1);
         INDArray error = expectedOutput.sub(output); // Compute the error
         System.out.println("Backward pass");
+
+        // List to store gradients of all layers
+        List<INDArray> gradients = new ArrayList<>();
+
         // Start backpropagation
         for (int i = layers.size() - 1; i >= 0; i--) {
             Object layer = layers.get(i);
@@ -83,22 +86,40 @@ public class CNNModel {
                         : null;
 
                 // Backward pass through fully connected layer
-                error = fcLayer.backward(error, nextLayerWeights);
-                fcLayer.updateWeights(learningRate);
+                INDArray grad = fcLayer.backward(error, nextLayerWeights);
+                gradients.add(grad);
+                error = grad;
             } else if (layer instanceof ConvolutionalLayer) {
                 // Handle backpropagation through convolutional layers
                 ConvolutionalLayer convLayer = (ConvolutionalLayer) layer;
-                INDArray filterGradients = convLayer.backward(error, learningRate); // Receive a single gradient INDArray
-
-                // Aggregate the gradients
-                error = aggregateError(filterGradients); // Update this to handle backpropagation to the previous layer
+                INDArray grad = convLayer.backward(error, optimizer.getLearningRate()); // Receive a single gradient INDArray
+                gradients.add(grad);
+                error = aggregateError(grad); // Update this to handle backpropagation to the previous layer
             } else if (layer instanceof MaxPoolingLayer) {
                 // Handle backpropagation through max pooling layers
                 MaxPoolingLayer poolLayer = (MaxPoolingLayer) layer;
                 error = poolLayer.backward(error); // Ensure this method is implemented in MaxPoolingLayer
             }
         }
+
+        // Update weights using gradients and optimizer
+        optimizer.step(getParameters(), gradients);
         System.out.println();
+    }
+
+    // Method to get all parameters (weights) from the layers
+    private List<INDArray> getParameters() {
+        List<INDArray> parameters = new ArrayList<>();
+        for (Object layer : layers) {
+            if (layer instanceof FullyConnectedLayer) {
+                parameters.add(((FullyConnectedLayer) layer).getWeights());
+            } else if (layer instanceof ConvolutionalLayer) {
+                for (INDArray filter : ((ConvolutionalLayer) layer).getFilters()) {
+                    parameters.add(filter);
+                }
+            }
+        }
+        return parameters;
     }
 
     private INDArray aggregateError(INDArray filterGradients) {
