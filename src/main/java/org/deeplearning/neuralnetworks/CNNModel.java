@@ -24,7 +24,7 @@ public class CNNModel {
     // Forward pass through all layers
     public INDArray forward(INDArray input) {
         INDArray output = input;
-
+        System.out.println("Forward pass");
         for (Object layer : layers) {
             if (layer instanceof ConvolutionalLayer) {
                 ConvolutionalLayer convLayer = (ConvolutionalLayer) layer;
@@ -34,10 +34,13 @@ public class CNNModel {
                 MaxPoolingLayer poolLayer = (MaxPoolingLayer) layer;
                 output = poolLayer.forward(output);
             } else if (layer instanceof FullyConnectedLayer) {
+                // Flatten the output before feeding it into the fully connected layer
+                output = flatten(output);
                 FullyConnectedLayer fcLayer = (FullyConnectedLayer) layer;
                 output = fcLayer.forward(output);
             }
         }
+        System.out.println();
         return output;
     }
 
@@ -58,13 +61,16 @@ public class CNNModel {
         return concatenated;
     }
 
+    // Method to flatten a 3D tensor to a 1D tensor
+    private INDArray flatten(INDArray input) {
+        return input.reshape(input.size(0), input.size(1) * input.size(2) * input.size(3));
+    }
 
-    public void backward(INDArray expectedOutput) {
+    public void backward(INDArray output, INDArray expectedOutput) {
         // Calculate deltas for the last layer
         Object lastLayer = layers.get(layers.size() - 1);
-        INDArray output = ((FullyConnectedLayer) lastLayer).getOutputs();
         INDArray error = expectedOutput.sub(output); // Compute the error
-
+        System.out.println("Backward pass");
         // Start backpropagation
         for (int i = layers.size() - 1; i >= 0; i--) {
             Object layer = layers.get(i);
@@ -91,8 +97,8 @@ public class CNNModel {
                 error = poolLayer.backward(error); // Ensure this method is implemented in MaxPoolingLayer
             }
         }
+        System.out.println();
     }
-
 
     private INDArray aggregateError(INDArray filterGradients) {
         // Here, we're assuming that filterGradients is an INDArray containing aggregated gradients from filters
@@ -110,34 +116,52 @@ public class CNNModel {
         return aggregatedError;
     }
 
-
-
-
     // Train the model with a single batch of data
     public void train(INDArray input, INDArray expectedOutput) {
         // Forward pass
         INDArray output = forward(input);
 
         // Backward pass
-        backward(expectedOutput);
+        backward(output, expectedOutput);
     }
 
     // Evaluate the model on test data
-    public double test(INDArray input, INDArray expectedOutput) {
+    public INDArray test(INDArray input, INDArray expectedOutput) {
         INDArray output = forward(input);
-        // Calculate accuracy or other metrics
-        double correctPredictions = output.eq(expectedOutput).sumNumber().doubleValue();
-        return correctPredictions / expectedOutput.rows(); // Return accuracy
+        // Find the index of the maximum value in each row (the predicted class)
+        INDArray predictedClasses = Nd4j.argMax(output, 1);
+        INDArray actualClasses = Nd4j.argMax(expectedOutput, 1);
+
+        // Calculate the number of correct predictions
+        double correctPredictions = predictedClasses.eq(actualClasses).sumNumber().doubleValue();
+
+        // Calculate accuracy
+        double accuracy = correctPredictions / expectedOutput.rows();
+
+        // Return accuracy as an INDArray
+        return Nd4j.create(new double[]{accuracy});
     }
 
     // Training loop for multiple epochs
     public void fit(INDArray trainingData, INDArray trainingLabels, int epochs, int batchSize) {
+        long numBatches = trainingData.size(0) / batchSize;
+
         for (int epoch = 0; epoch < epochs; epoch++) {
-            for (int i = 0; i < trainingData.rows(); i += batchSize) {
-                INDArray batchData = trainingData.get(NDArrayIndex.interval(i, Math.min(i + batchSize, trainingData.rows())), NDArrayIndex.all());
-                INDArray batchLabels = trainingLabels.get(NDArrayIndex.interval(i, Math.min(i + batchSize, trainingLabels.rows())), NDArrayIndex.all());
+            System.out.print("Epoch:" + epoch);
+            for (int batchIndex = 0; batchIndex < numBatches; batchIndex++) {
+                System.out.print("=");
+
+                // Extract the current batch of data and labels
+                int startIndex = batchIndex * batchSize;
+                long endIndex = Math.min(startIndex + batchSize, trainingData.size(0));
+
+                INDArray batchData = trainingData.get(NDArrayIndex.interval(startIndex, endIndex), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+                INDArray batchLabels = trainingLabels.get(NDArrayIndex.interval(startIndex, endIndex), NDArrayIndex.all());
+
+                // Train the model on the current batch
                 train(batchData, batchLabels);
             }
+            System.out.println();
             System.out.println("Epoch " + (epoch + 1) + " completed.");
         }
     }
