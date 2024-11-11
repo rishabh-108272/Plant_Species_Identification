@@ -44,8 +44,11 @@ public class ConvolutionalLayer {
         INDArray sobelY3Channel = Nd4j.concat(0, sobelY, sobelY, sobelY).reshape(3, 3, 3); // Shape: [3, 3, 3]
 
 // Assuming numFilters is set to 2 for Sobel X and Sobel Y
-        filters[0] = sobelX3Channel;
-        filters[1] = sobelY3Channel;
+        INDArray flattenedSobelX = sobelX3Channel.reshape(1, 27);
+        INDArray flattenedSobelY = sobelY3Channel.reshape(1, 27);
+
+        filters[0] = flattenedSobelX;
+        filters[1] = flattenedSobelY;
 
 
 
@@ -86,23 +89,29 @@ public class ConvolutionalLayer {
             }
         }
 
-        // Reshape patches to apply convolution
-        patches = patches.reshape(batchSize, inputChannels * filterSize * filterSize, outputHeight * outputWidth);
-        System.out.println("Patches Shape: "+patches.shapeInfoToString());
-        // Apply convolution filters
+        // Reshape patches to [batchSize * outputHeight * outputWidth, inputChannels * filterSize * filterSize]
+        patches = patches.permute(0, 4, 5, 1, 2, 3).reshape(batchSize * outputHeight * outputWidth, inputChannels * filterSize * filterSize);
+        System.out.println("Reshaped Patches Shape: " + patches.shapeInfoToString());
+
+// Apply convolution filters
         for (int f = 0; f < numFilters; f++) {
-            System.out.println(filters[f].shapeInfoToString());
-            // Assuming filters[f] is originally a 3x3 filter for 3 input channels
-            INDArray filter = filters[f].reshape(inputChannels * filterSize * filterSize, 1); // Flatten the filter
+            // Reshape the filter to [inputChannels * filterSize * filterSize, 1]
+            INDArray filter = filters[f].reshape(inputChannels * filterSize * filterSize, 1);
+            System.out.println("Reshaped Filter Shape: " + filter.shapeInfoToString());
 
-// Multiply the reshaped filter with the reshaped patches
-            INDArray convolved = filter.transpose().mmul(patches);
-
+            // Multiply the reshaped filter with the reshaped patches
+            INDArray convolved = patches.mmul(filter);
+            System.out.println("Convolved Shape: "+ convolved.shapeInfoToString());
+            // Reshape the convolved output to [batchSize, outputHeight, outputWidth]
             convolved = convolved.reshape(batchSize, outputHeight, outputWidth);
+            System.out.println("Convolved reshaped: "+ convolved.shapeInfoToString());
             convolved = activationFunction.activate(convolved);
+
+            // Place the convolved result in the output array
             output.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.point(f), NDArrayIndex.all(), NDArrayIndex.all()}, convolved);
         }
 
+        System.out.println("Shape of output: "+output.shapeInfoToString());
         return output;
     }
 

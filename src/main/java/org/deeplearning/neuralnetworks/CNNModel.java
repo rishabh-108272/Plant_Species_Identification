@@ -32,6 +32,7 @@ public class CNNModel {
             if (layer instanceof ConvolutionalLayer) {
                 ConvolutionalLayer convLayer = (ConvolutionalLayer) layer;
                 INDArray[] featureMaps = new INDArray[]{convLayer.forward(output)};
+                System.out.println("Feature Maps:"+ featureMaps[0].shapeInfoToString());
                 output = concatenateFeatureMaps(featureMaps);
             } else if (layer instanceof MaxPoolingLayer) {
                 MaxPoolingLayer poolLayer = (MaxPoolingLayer) layer;
@@ -66,6 +67,8 @@ public class CNNModel {
         // Reshape to have all feature maps concatenated along the appropriate dimension
         long[] concatenatedShape = originalShape.clone();
         concatenatedShape[0] = numMaps;  // Adjust the first dimension to reflect the number of feature maps
+//        System.out.println("Shape of original concatenated:"+concatenatedShape[0].shapeInfoToString());
+//        System.out.println("Shape of ")
         concatenated = concatenated.reshape(concatenatedShape);
 
         return concatenated;
@@ -152,7 +155,7 @@ public class CNNModel {
     public void train(INDArray input, INDArray expectedOutput) {
         // Forward pass
         INDArray output = forward(input);
-
+        System.out.println("Shape of output in train: "+output.shapeInfoToString());
         // Backward pass
         backward(output, expectedOutput);
     }

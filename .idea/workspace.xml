@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="f5efb176-c470-454d-ad1a-3f579a8f3d73" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/CNNModel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/CNNModel.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/ConvolutionalLayer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/ConvolutionalLayer.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/Main.java" afterDir="false" />
     </list>

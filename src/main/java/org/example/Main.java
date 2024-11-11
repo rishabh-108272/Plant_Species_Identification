@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Random;
 public class Main {
     private static final Logger log = LoggerFactory.getLogger(Main.class);
-    private static final String RESOURCES_FOLDER_PATH = "C:\\Users\\Saurav\\Documents\\Plant_Species_Identification\\src\\main\\resources\\Output";
+    private static final String RESOURCES_FOLDER_PATH = "C:\\Users\\rishi\\IdeaProjects\\rishabh\\src\\main\\resources\\Output";
     private static final int HEIGHT = 128;
     private static final int WIDTH = 128;
     private static final int CHANNELS = 3; // 3 channels for color images
