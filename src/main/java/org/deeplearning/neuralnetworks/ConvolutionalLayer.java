@@ -28,6 +28,7 @@ public class ConvolutionalLayer {
         for (int i = 0; i < numFilters; i++) {
             filters[i] = Nd4j.rand(new int[] {1, filterSize, filterSize}).subi(0.5); // Initialize filters with values between -0.5 and 0.5
         }
+
     }
 
     // Forward pass for the convolutional layer
@@ -41,13 +42,13 @@ public class ConvolutionalLayer {
 
         // Initialize output feature maps
         INDArray output = Nd4j.zeros(batchSize, numFilters, outputHeight, outputWidth);
-
+        System.out.println(output.shapeInfoToString());
         // Pad the input
         INDArray paddedInput = padInput(input, padding);
-
+        System.out.println("paddedInput Shape: "+paddedInput.shapeInfoToString());
         // Extract patches from the input
         INDArray patches = Nd4j.create(new int[]{batchSize, inputChannels, filterSize, filterSize, outputHeight, outputWidth});
-
+        System.out.println("Patches Shape: "+patches.shapeInfoToString());
         for (int i = 0; i < outputHeight; i++) {
             for (int j = 0; j < outputWidth; j++) {
                 int startX = i * stride;
@@ -66,11 +67,12 @@ public class ConvolutionalLayer {
         }
 
         // Reshape patches to apply convolution
-//        patches = patches.reshape(batchSize, inputChannels * filterSize * filterSize, outputHeight * outputWidth);
-
+        patches = patches.reshape(batchSize, inputChannels * filterSize * filterSize, outputHeight * outputWidth);
+        System.out.println("Patches Shape: "+patches.shapeInfoToString());
         // Apply convolution filters
         for (int f = 0; f < numFilters; f++) {
-            INDArray filter = filters[f].reshape(1,batchSize);
+            System.out.println(filters[f].shapeInfoToString());
+            INDArray filter = filters[f];
             INDArray convolved = filter.mmul(patches);
             convolved = convolved.reshape(batchSize, outputHeight, outputWidth);
             convolved = activationFunction.activate(convolved);

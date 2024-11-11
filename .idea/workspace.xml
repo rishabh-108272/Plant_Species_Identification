@@ -91,6 +91,10 @@
           <line>21</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
+        <breakpoint enabled="true" type="java-exception">
+          <properties class="org.nd4j.linalg.exception.ND4JIllegalStateException" package="org.nd4j.linalg.exception" />
+          <option name="timeStamp" value="2" />
+        </breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>

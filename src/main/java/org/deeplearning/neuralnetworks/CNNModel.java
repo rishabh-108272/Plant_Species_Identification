@@ -25,6 +25,7 @@ public class CNNModel {
     // Forward pass through all layers
     public INDArray forward(INDArray input) {
         INDArray output = input;
+
         System.out.println("Forward pass");
 
         for (Object layer : layers) {
@@ -187,9 +188,11 @@ public class CNNModel {
                 long endIndex = Math.min(startIndex + batchSize, trainingData.size(0));
 
                 INDArray batchData = trainingData.get(NDArrayIndex.interval(startIndex, endIndex), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
-                System.out.println(batchData);
+//                System.out.println(batchData);
+                System.out.println(batchData.shapeInfoToString());
                 INDArray batchLabels = trainingLabels.get(NDArrayIndex.interval(startIndex, endIndex), NDArrayIndex.all());
-                System.out.println(batchLabels);
+                System.out.println(batchLabels.shapeInfoToString());
+//                System.out.println(batchLabels);
                 // Train the model on the current batch
                 train(batchData, batchLabels);
             }

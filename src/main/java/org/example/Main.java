@@ -36,12 +36,12 @@ public class Main {
         File testData = new File(RESOURCES_FOLDER_PATH + "/test");
 
         // Initialize the CNN model
-        CNNModel cnnModel = new CNNModel(0.01);
+        CNNModel cnnModel = new CNNModel(0.0001);
 
         ActivationFunction RELU = new ReluActivationFunction();
         ActivationFunction SOFTMAX = new SoftmaxActivationFunction();
         // Add layers to the model
-        cnnModel.addLayer(new ConvolutionalLayer(32, 3, 1, 0, RELU));
+        cnnModel.addLayer(new ConvolutionalLayer(32, 3, 1, 1, RELU));
         cnnModel.addLayer(new MaxPoolingLayer(2, 1));
         cnnModel.addLayer(new FullyConnectedLayer(32 * (HEIGHT / 2) * (WIDTH / 2), 128, RELU));
         cnnModel.addLayer(new FullyConnectedLayer(128, N_OUTCOMES, SOFTMAX));
