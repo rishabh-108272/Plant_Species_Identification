@@ -6,6 +6,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class CNNModel {
@@ -34,13 +35,21 @@ public class CNNModel {
                 INDArray[] featureMaps = new INDArray[]{convLayer.forward(output)};
                 System.out.println("Feature Maps:"+ featureMaps[0].shapeInfoToString());
                 output = concatenateFeatureMaps(featureMaps);
+                // Flatten to a rank-2 array
+                long numFeatureMaps = output.shape()[0];
+                long flattenedFeaturesPerMap = output.length() / numFeatureMaps;
+
+                output = output.reshape(numFeatureMaps, flattenedFeaturesPerMap);
+
+                System.out.println("Output shape after flattening to rank 2: " + output.shapeInfoToString());
             } else if (layer instanceof MaxPoolingLayer) {
                 MaxPoolingLayer poolLayer = (MaxPoolingLayer) layer;
                 output = poolLayer.forward(output);
             } else if (layer instanceof FullyConnectedLayer) {
                 // Flatten the output before feeding it into the fully connected layer
-                output = flatten(output);
+//                output = flatten(output);
                 FullyConnectedLayer fcLayer = (FullyConnectedLayer) layer;
+                System.out.println("After forward pass of MaxPooling Layer:"+ output.shapeInfoToString());
                 output = fcLayer.forward(output);
             }
         }
@@ -67,10 +76,10 @@ public class CNNModel {
         // Reshape to have all feature maps concatenated along the appropriate dimension
         long[] concatenatedShape = originalShape.clone();
         concatenatedShape[0] = numMaps;  // Adjust the first dimension to reflect the number of feature maps
-//        System.out.println("Shape of original concatenated:"+concatenatedShape[0].shapeInfoToString());
-//        System.out.println("Shape of ")
-        concatenated = concatenated.reshape(concatenatedShape);
-
+        System.out.println("Original Shape:"+ Arrays.toString(concatenatedShape));
+        System.out.println("Shape of concatenated:"+concatenated.shapeInfoToString());
+        concatenated = concatenated.reshape(32,2,128,128);
+        System.out.println("Shape of reshaped concatenated:"+concatenated.shapeInfoToString());
         return concatenated;
     }
 
@@ -82,7 +91,7 @@ public class CNNModel {
     public void backward(INDArray output, INDArray expectedOutput) {
         // Calculate deltas for the last layer
         Object lastLayer = layers.get(layers.size() - 1);
-        INDArray error = expectedOutput.sub(output); // Compute the error
+        INDArray error = expectedOutput.subi(output); // Compute the error
         System.out.println("Backward pass");
 
         // List to store gradients of all layers
@@ -156,6 +165,7 @@ public class CNNModel {
         // Forward pass
         INDArray output = forward(input);
         System.out.println("Shape of output in train: "+output.shapeInfoToString());
+        System.out.println("Shape of expected output:"+ expectedOutput.shapeInfoToString());
         // Backward pass
         backward(output, expectedOutput);
     }

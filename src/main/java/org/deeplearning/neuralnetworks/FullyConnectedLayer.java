@@ -19,15 +19,28 @@ public class FullyConnectedLayer {
 
         // Xavier initialization
         double limit = Math.sqrt(6.0 / (numInputs + numNeurons));
-        weights = Nd4j.rand(numNeurons, numInputs).muli(2 * limit).subi(limit); // Uniform distribution between [-limit, limit]
-        biases = Nd4j.zeros(numNeurons, 1); // Initialize biases to zero
+        weights = Nd4j.rand(numNeurons, numInputs).muli(2 * limit).subi(limit); // Shape: [numNeurons, numInputs]
+
+// If necessary, reshape the weights
+        weights = weights.reshape(numInputs, numNeurons); // Shape: [131072, 128]
+
+        biases = Nd4j.zeros(numNeurons, 1); // Shape: [128, 1] - Initialize biases to zero
+
     }
 
     // Forward pass for the fully connected layer
     public INDArray forward(INDArray input) {
-        this.inputs = input;
-        INDArray weightedSum = weights.mmul(input).addColumnVector(biases);
-        this.outputs = activationFunction.activate(weightedSum);
+        System.out.println("Weights shape:"+ weights.shapeInfoToString());
+
+// Transpose the input if necessary to align dimensions
+        input = input.transpose();
+        System.out.println("Input shape after reshaping for fully connected layer: " + input.shapeInfoToString());
+
+// Proceed with forward pass
+        INDArray weightedSum = weights.transpose().mmul(input).addColumnVector(biases);
+        this.outputs = activationFunction.activate(weightedSum.transpose());// Transpose back if needed
+        System.out.println("Output shape for FC layer:"+outputs.shapeInfoToString());
+        System.out.println("FC layer Forward pass completed!!!");
         return outputs;
     }
 

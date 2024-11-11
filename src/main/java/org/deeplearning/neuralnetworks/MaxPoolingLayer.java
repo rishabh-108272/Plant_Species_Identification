@@ -15,6 +15,7 @@ public class MaxPoolingLayer {
 
     // Forward pass for the max pooling layer
     public INDArray forward(INDArray input) {
+        System.out.println("Maxpooling Layer input shape:"+ input.shapeInfoToString());
         int inputHeight = input.rows();
         int inputWidth = input.columns();
         int outputHeight = (inputHeight - poolSize) / stride + 1;
@@ -30,6 +31,7 @@ public class MaxPoolingLayer {
                 output.putScalar(i, j, maxVal);
             }
         }
+        System.out.println("MaxPooling layer forward pass completed!!!");
         return output;
     }
     public INDArray backward(INDArray upstreamGradient) {
