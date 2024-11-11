@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
 public class Main {
     private static final Logger log = LoggerFactory.getLogger(Main.class);
     private static final String RESOURCES_FOLDER_PATH = "C:\\Users\\rishi\\IdeaProjects\\rishabh\\src\\main\\resources\\Output";
@@ -43,7 +42,7 @@ public class Main {
         ActivationFunction SOFTMAX = new SoftmaxActivationFunction();
         // Add layers to the model
         cnnModel.addLayer(new ConvolutionalLayer(32, 3, 1, 0, RELU));
-        cnnModel.addLayer(new MaxPoolingLayer(2, 2));
+        cnnModel.addLayer(new MaxPoolingLayer(2, 1));
         cnnModel.addLayer(new FullyConnectedLayer(32 * (HEIGHT / 2) * (WIDTH / 2), 128, RELU));
         cnnModel.addLayer(new FullyConnectedLayer(128, N_OUTCOMES, SOFTMAX));
 
@@ -55,7 +54,9 @@ public class Main {
                 if (classFolder.isDirectory()) {
                     log.info("Training with class folder: " + classFolder.getName());
                     INDArray input = loadImagesFromDirectory(classFolder, true);
+                    System.out.println(input.shapeInfoToString());
                     INDArray output = createLabelsArray(label, (int) input.size(0));
+                    System.out.println(output.shapeInfoToString());
                     cnnModel.fit(input, output, 1, BATCH_SIZE);
                 }
             }

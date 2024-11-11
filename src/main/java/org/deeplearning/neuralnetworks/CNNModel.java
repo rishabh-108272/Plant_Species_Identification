@@ -2,6 +2,7 @@ package org.deeplearning.neuralnetworks;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
@@ -25,11 +26,12 @@ public class CNNModel {
     public INDArray forward(INDArray input) {
         INDArray output = input;
         System.out.println("Forward pass");
+
         for (Object layer : layers) {
             if (layer instanceof ConvolutionalLayer) {
                 ConvolutionalLayer convLayer = (ConvolutionalLayer) layer;
-                INDArray[] featureMaps = convLayer.forward(output);
-                output = concatenateFeatureMaps(featureMaps); // Use optimized concatenation
+                INDArray[] featureMaps = new INDArray[]{convLayer.forward(output)};
+                output = concatenateFeatureMaps(featureMaps);
             } else if (layer instanceof MaxPoolingLayer) {
                 MaxPoolingLayer poolLayer = (MaxPoolingLayer) layer;
                 output = poolLayer.forward(output);
@@ -44,24 +46,31 @@ public class CNNModel {
         return output;
     }
 
-    // Helper method to concatenate feature maps into a single INDArray
+    // Method to concatenate feature maps into a single INDArray
     private INDArray concatenateFeatureMaps(INDArray[] featureMaps) {
         int numMaps = featureMaps.length;
-        long height = featureMaps[0].size(2); // Assuming shape is (batchSize, channels, height, width)
-        long width = featureMaps[0].size(3);
+        long[] originalShape = featureMaps[0].shape();
+        long totalElementsPerMap = featureMaps[0].length();
+        long totalElements = numMaps * totalElementsPerMap;
 
         // Create a new INDArray to hold the concatenated result
-        INDArray concatenated = Nd4j.create(numMaps, height * width);
+        INDArray concatenated = Nd4j.create(totalElements);
 
         for (int i = 0; i < numMaps; i++) {
             // Directly copy the data from each feature map
-            concatenated.putRow(i, featureMaps[i].reshape(1, height * width));
+            concatenated.put(new INDArrayIndex[]{NDArrayIndex.interval(i * totalElementsPerMap, (i + 1) * totalElementsPerMap)},
+                    featureMaps[i].reshape(totalElementsPerMap));
         }
+
+        // Reshape to have all feature maps concatenated along the appropriate dimension
+        long[] concatenatedShape = originalShape.clone();
+        concatenatedShape[0] = numMaps;  // Adjust the first dimension to reflect the number of feature maps
+        concatenated = concatenated.reshape(concatenatedShape);
 
         return concatenated;
     }
 
-    // Method to flatten a 3D tensor to a 1D tensor
+    // Method to flatten a 4D tensor to a 2D tensor
     private INDArray flatten(INDArray input) {
         return input.reshape(input.size(0), input.size(1) * input.size(2) * input.size(3));
     }
