@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="f5efb176-c470-454d-ad1a-3f579a8f3d73" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/CNNModel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/CNNModel.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/ConvolutionalLayer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/ConvolutionalLayer.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/Main.java" afterDir="false" />
     </list>
@@ -86,11 +85,6 @@
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/CNNModel.java</url>
-          <line>21</line>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
         <breakpoint enabled="true" type="java-exception">
           <properties class="org.nd4j.linalg.exception.ND4JIllegalStateException" package="org.nd4j.linalg.exception" />
           <option name="timeStamp" value="2" />
