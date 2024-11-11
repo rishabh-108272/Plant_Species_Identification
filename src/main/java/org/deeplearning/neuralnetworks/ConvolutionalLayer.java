@@ -23,11 +23,31 @@ public class ConvolutionalLayer {
         this.activationFunction = activationFunction;
         this.filters = new INDArray[numFilters];
 
-        // Initialize filters with random values
-        Random random = new Random();
-        for (int i = 0; i < numFilters; i++) {
-            filters[i] = Nd4j.rand(new int[] {1, filterSize, filterSize}).subi(0.5); // Initialize filters with values between -0.5 and 0.5
-        }
+        // Create Sobel X kernel for a 3-channel input
+        INDArray sobelX = Nd4j.create(new float[][] {
+                {-1, 0, 1},
+                {-2, 0, 2},
+                {-1, 0, 1}
+        }).reshape(1, 3, 3); // Initial single channel, 3x3 kernel
+
+// Expand sobelX across 3 channels
+        INDArray sobelX3Channel = Nd4j.concat(0, sobelX, sobelX, sobelX).reshape(3, 3, 3); // Shape: [3, 3, 3]
+
+// Create Sobel Y kernel for a 3-channel input
+        INDArray sobelY = Nd4j.create(new float[][] {
+                {-1, -2, -1},
+                { 0,  0,  0},
+                { 1,  2,  1}
+        }).reshape(1, 3, 3); // Initial single channel, 3x3 kernel
+
+// Expand sobelY across 3 channels
+        INDArray sobelY3Channel = Nd4j.concat(0, sobelY, sobelY, sobelY).reshape(3, 3, 3); // Shape: [3, 3, 3]
+
+// Assuming numFilters is set to 2 for Sobel X and Sobel Y
+        filters[0] = sobelX3Channel;
+        filters[1] = sobelY3Channel;
+
+
 
     }
 
@@ -72,8 +92,12 @@ public class ConvolutionalLayer {
         // Apply convolution filters
         for (int f = 0; f < numFilters; f++) {
             System.out.println(filters[f].shapeInfoToString());
-            INDArray filter = filters[f];
-            INDArray convolved = filter.mmul(patches);
+            // Assuming filters[f] is originally a 3x3 filter for 3 input channels
+            INDArray filter = filters[f].reshape(inputChannels * filterSize * filterSize, 1); // Flatten the filter
+
+// Multiply the reshaped filter with the reshaped patches
+            INDArray convolved = filter.transpose().mmul(patches);
+
             convolved = convolved.reshape(batchSize, outputHeight, outputWidth);
             convolved = activationFunction.activate(convolved);
             output.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.point(f), NDArrayIndex.all(), NDArrayIndex.all()}, convolved);

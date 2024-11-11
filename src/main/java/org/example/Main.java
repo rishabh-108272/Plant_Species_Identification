@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Random;
 public class Main {
     private static final Logger log = LoggerFactory.getLogger(Main.class);
-    private static final String RESOURCES_FOLDER_PATH = "C:\\Users\\rishi\\IdeaProjects\\rishabh\\src\\main\\resources\\Output";
+    private static final String RESOURCES_FOLDER_PATH = "C:\\Users\\Saurav\\Documents\\Plant_Species_Identification\\src\\main\\resources\\Output";
     private static final int HEIGHT = 128;
     private static final int WIDTH = 128;
     private static final int CHANNELS = 3; // 3 channels for color images
@@ -41,7 +41,7 @@ public class Main {
         ActivationFunction RELU = new ReluActivationFunction();
         ActivationFunction SOFTMAX = new SoftmaxActivationFunction();
         // Add layers to the model
-        cnnModel.addLayer(new ConvolutionalLayer(32, 3, 1, 1, RELU));
+        cnnModel.addLayer(new ConvolutionalLayer(2, 3, 1, 1, RELU));
         cnnModel.addLayer(new MaxPoolingLayer(2, 1));
         cnnModel.addLayer(new FullyConnectedLayer(32 * (HEIGHT / 2) * (WIDTH / 2), 128, RELU));
         cnnModel.addLayer(new FullyConnectedLayer(128, N_OUTCOMES, SOFTMAX));
