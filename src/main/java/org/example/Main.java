@@ -43,8 +43,8 @@ public class Main {
         // Add layers to the model
         cnnModel.addLayer(new ConvolutionalLayer(2, 3, 1, 1, RELU));
         cnnModel.addLayer(new MaxPoolingLayer(2, 1));
-        cnnModel.addLayer(new FullyConnectedLayer(32767, 128, RELU));
-        cnnModel.addLayer(new FullyConnectedLayer(128, N_OUTCOMES, SOFTMAX));
+        cnnModel.addLayer(new FullyConnectedLayer(48387, 128, RELU,0.0001));
+        cnnModel.addLayer(new FullyConnectedLayer(128, N_OUTCOMES, SOFTMAX,0.0001));
 
         // Training Loop
         for (int epoch = 0; epoch < EPOCHS; epoch++) {
@@ -57,7 +57,7 @@ public class Main {
                     System.out.println(input.shapeInfoToString());
                     INDArray output = createLabelsArray(label, (int) input.size(0));
                     System.out.println(output.shapeInfoToString());
-                    cnnModel.fit(input, output, 1, BATCH_SIZE);
+                    cnnModel.train(input, output);
                 }
             }
             log.info("Epoch " + (epoch + 1) + " completed.");

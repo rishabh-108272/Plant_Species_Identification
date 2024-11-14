@@ -15,25 +15,49 @@ public class MaxPoolingLayer {
 
     // Forward pass for the max pooling layer
     public INDArray forward(INDArray input) {
-        System.out.println("Maxpooling Layer input shape:"+ input.shapeInfoToString());
-        int inputHeight = input.rows();
-        int inputWidth = input.columns();
-        int outputHeight = (inputHeight - poolSize) / stride + 1;
-        int outputWidth = (inputWidth - poolSize) / stride + 1;
-        INDArray output = Nd4j.create(outputHeight, outputWidth);
+        System.out.println("Maxpooling Layer input shape: " + input.shapeInfoToString());
 
-        for (int i = 0; i < outputHeight; i++) {
-            for (int j = 0; j < outputWidth; j++) {
-                int startX = i * stride;
-                int startY = j * stride;
-                INDArray subMatrix = input.get(NDArrayIndex.interval(startX, startX + poolSize), NDArrayIndex.interval(startY, startY + poolSize));
-                double maxVal = subMatrix.maxNumber().doubleValue();
-                output.putScalar(i, j, maxVal);
+        int batchSize = (int) input.size(0);
+        int channels = (int) input.size(1);
+        int inputHeight = (int) input.size(2);
+        int inputWidth = (int) input.size(3);
+
+        // Calculate output dimensions
+        int outputHeight = ((inputHeight - poolSize) / stride) + 1;
+        int outputWidth = ((inputWidth - poolSize) / stride) + 1;
+
+        // Initialize output array with 4D shape [batchSize, channels, outputHeight, outputWidth]
+        INDArray output = Nd4j.create(batchSize, channels, outputHeight, outputWidth);
+
+        // Perform max pooling
+        for (int b = 0; b < batchSize; b++) {
+            for (int c = 0; c < channels; c++) {
+                for (int i = 0; i < outputHeight; i++) {
+                    for (int j = 0; j < outputWidth; j++) {
+                        int startX = i * stride;
+                        int startY = j * stride;
+
+                        // Get pooling region
+                        INDArray subMatrix = input.get(
+                                NDArrayIndex.point(b),
+                                NDArrayIndex.point(c),
+                                NDArrayIndex.interval(startX, startX + poolSize),
+                                NDArrayIndex.interval(startY, startY + poolSize)
+                        );
+
+                        // Find the maximum value in the subMatrix
+                        double maxVal = subMatrix.maxNumber().doubleValue();
+                        output.putScalar(new int[]{b, c, i, j}, maxVal);
+                    }
+                }
             }
         }
-        System.out.println("MaxPooling layer forward pass completed!!!");
+
+        System.out.println("MaxPooling layer forward pass completed!");
+        System.out.println("MaxPooling Layer output shape: " + output.shapeInfoToString());
         return output;
     }
+
     public INDArray backward(INDArray upstreamGradient) {
         int inputHeight = (upstreamGradient.rows() - 1) * stride + poolSize; // Calculate the input height
         int inputWidth = (upstreamGradient.columns() - 1) * stride + poolSize; // Calculate the input width

@@ -35,19 +35,15 @@ public class CNNModel {
                 INDArray[] featureMaps = new INDArray[]{convLayer.forward(output)};
                 System.out.println("Feature Maps:"+ featureMaps[0].shapeInfoToString());
                 output = concatenateFeatureMaps(featureMaps);
-                // Flatten to a rank-2 array
-                long numFeatureMaps = output.shape()[0];
-                long flattenedFeaturesPerMap = output.length() / numFeatureMaps;
 
-                output = output.reshape(numFeatureMaps, flattenedFeaturesPerMap);
-
-                System.out.println("Output shape after flattening to rank 2: " + output.shapeInfoToString());
+                System.out.println("Output shape after convolutional layer forward pass: " + output.shapeInfoToString());
             } else if (layer instanceof MaxPoolingLayer) {
                 MaxPoolingLayer poolLayer = (MaxPoolingLayer) layer;
                 output = poolLayer.forward(output);
             } else if (layer instanceof FullyConnectedLayer) {
                 // Flatten the output before feeding it into the fully connected layer
 //                output = flatten(output);
+//                System.out.println("Shape of flattened output in 1D array: "+output.shapeInfoToString());
                 FullyConnectedLayer fcLayer = (FullyConnectedLayer) layer;
                 System.out.println("After forward pass of MaxPooling Layer:"+ output.shapeInfoToString());
                 output = fcLayer.forward(output);
@@ -59,6 +55,7 @@ public class CNNModel {
 
     // Method to concatenate feature maps into a single INDArray
     private INDArray concatenateFeatureMaps(INDArray[] featureMaps) {
+
         int numMaps = featureMaps.length;
         long[] originalShape = featureMaps[0].shape();
         long totalElementsPerMap = featureMaps[0].length();
@@ -78,7 +75,7 @@ public class CNNModel {
         concatenatedShape[0] = numMaps;  // Adjust the first dimension to reflect the number of feature maps
         System.out.println("Original Shape:"+ Arrays.toString(concatenatedShape));
         System.out.println("Shape of concatenated:"+concatenated.shapeInfoToString());
-        concatenated = concatenated.reshape(32,2,128,128);
+        concatenated = concatenated.reshape(48,3,128,128);
         System.out.println("Shape of reshaped concatenated:"+concatenated.shapeInfoToString());
         return concatenated;
     }
@@ -90,7 +87,7 @@ public class CNNModel {
 
     public void backward(INDArray output, INDArray expectedOutput) {
         // Calculate deltas for the last layer
-        Object lastLayer = layers.get(layers.size() - 1);
+//        Object lastLayer = layers.get(layers.size() - 1);
         INDArray error = expectedOutput.subi(output); // Compute the error
         System.out.println("Backward pass");
 
@@ -106,8 +103,9 @@ public class CNNModel {
                 INDArray nextLayerWeights = (i > 0 && layers.get(i - 1) instanceof FullyConnectedLayer)
                         ? ((FullyConnectedLayer) layers.get(i - 1)).getWeights()
                         : null;
-
+                System.out.println("nextLayerweights shape: "+nextLayerWeights.shapeInfoToString());
                 // Backward pass through fully connected layer
+                System.out.println("Starting fully connected backward pass");
                 INDArray grad = fcLayer.backward(error, nextLayerWeights);
                 gradients.add(grad);
                 error = grad;
@@ -126,7 +124,7 @@ public class CNNModel {
 
         // Update weights using gradients and optimizer
         optimizer.step(getParameters(), gradients);
-        System.out.println();
+        System.out.println("Whole Backward pass complete!!!");
     }
 
     // Method to get all parameters (weights) from the layers
@@ -204,7 +202,7 @@ public class CNNModel {
 //                System.out.println(batchData);
                 System.out.println(batchData.shapeInfoToString());
                 INDArray batchLabels = trainingLabels.get(NDArrayIndex.interval(startIndex, endIndex), NDArrayIndex.all());
-                System.out.println(batchLabels.shapeInfoToString());
+                System.out.println("Batchlabels shape: "+batchLabels.shapeInfoToString());
 //                System.out.println(batchLabels);
                 // Train the model on the current batch
                 train(batchData, batchLabels);

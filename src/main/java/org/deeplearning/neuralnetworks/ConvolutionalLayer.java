@@ -64,16 +64,14 @@ public class ConvolutionalLayer {
         int outputWidth = (inputWidth - filterSize + 2 * padding) / stride + 1;
 
         // Initialize output feature maps
-        INDArray output = Nd4j.zeros(batchSize, numFilters, outputHeight, outputWidth);
+        INDArray output = Nd4j.zeros(batchSize, inputChannels, outputHeight, outputWidth);
         System.out.println(output.shapeInfoToString());
-        // Pad the input
-        INDArray paddedInput = padInput(input, padding);
-        System.out.println("paddedInput Shape: "+paddedInput.shapeInfoToString());
+        System.out.println("paddedInput Shape: "+output.shapeInfoToString());
         // Extract patches from the input
         INDArray patches = Nd4j.create(new int[]{batchSize, inputChannels, filterSize, filterSize, outputHeight, outputWidth});
         System.out.println("Patches Shape: "+patches.shapeInfoToString());
-        for (int i = 0; i < outputHeight; i++) {
-            for (int j = 0; j < outputWidth; j++) {
+        for (int i = 0; i < outputHeight- filterSize; i++) {
+            for (int j = 0; j < outputWidth- filterSize; j++) {
                 int startX = i * stride;
                 int startY = j * stride;
                 patches.put(new INDArrayIndex[]{
@@ -83,7 +81,7 @@ public class ConvolutionalLayer {
                         NDArrayIndex.all(),
                         NDArrayIndex.point(i),
                         NDArrayIndex.point(j)
-                }, paddedInput.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                }, output.get(NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.interval(startX, startX + filterSize),
                         NDArrayIndex.interval(startY, startY + filterSize)));
             }
@@ -112,6 +110,7 @@ public class ConvolutionalLayer {
         }
 
         System.out.println("Shape of output: "+output.shapeInfoToString());
+        System.out.println("Convolutional Layer forward pass completed");
         return output;
     }
 

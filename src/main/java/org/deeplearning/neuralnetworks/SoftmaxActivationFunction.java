@@ -27,8 +27,8 @@ public class SoftmaxActivationFunction implements ActivationFunction {
         for (int i = 0; i < batchSize; i++) {
             INDArray outputRow = output.getRow(i);
             INDArray jacobian = computeJacobian(outputRow);
-            INDArray sampleGradient = jacobian.mmul(outputRow.transpose());
-            softmaxGradient.putRow(i, sampleGradient.transpose());
+            INDArray sampleGradient = jacobian.mmul(outputRow);
+            softmaxGradient.putRow(i, sampleGradient);
         }
 
         return softmaxGradient;
