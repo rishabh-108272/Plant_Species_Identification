@@ -6,11 +6,21 @@
   <component name="ChangeListManager">
     <list default="true" id="f5efb176-c470-454d-ad1a-3f579a8f3d73" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/CNNModel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/CNNModel.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/ConvolutionalLayer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/ConvolutionalLayer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/FullyConnectedLayer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/FullyConnectedLayer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/MaxPoolingLayer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/MaxPoolingLayer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/SoftmaxActivationFunction.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/SoftmaxActivationFunction.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/ActivationFunction.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/BatchGradientDescent.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/CNNModel.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/ConvolutionalLayer.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/FullyConnectedLayer.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/Layer.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/MaxPoolingLayer.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/MultiLayerNeuralNetworks.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/NeuralNetwork.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/Neuron.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/ReluActivationFunction.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/SigmoidActivationFunction.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/SoftmaxActivationFunction.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/StochasticGradientDescent.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/deeplearning/neuralnetworks/TanhActivationFunction.java" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/Main.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -27,6 +37,7 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RESET_MODE" value="KEEP" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 2
