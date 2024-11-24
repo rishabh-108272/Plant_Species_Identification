@@ -1,33 +1,43 @@
 package org.example;
 
-import org.deeplearning.neuralnetworks.*;
-import org.imgscalr.Scalr;
+import org.datavec.image.loader.NativeImageLoader;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
-import org.datavec.image.loader.NativeImageLoader;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+
 public class Main {
     private static final Logger log = LoggerFactory.getLogger(Main.class);
-    private static final String RESOURCES_FOLDER_PATH = "C:\\Users\\rishi\\IdeaProjects\\rishabh\\src\\main\\resources\\Output";
+    private static final String RESOURCES_FOLDER_PATH = "C:\\Users\\Saurav\\Documents\\Plant_Species_Identification\\src\\main\\resources\\Output";
     private static final int HEIGHT = 128;
     private static final int WIDTH = 128;
     private static final int CHANNELS = 3; // 3 channels for color images
-    private static final int N_OUTCOMES = 7; // Number of classes (adjust as per your dataset)
+    private static final int N_OUTCOMES = 7; // Number of classes
     private static final int BATCH_SIZE = 32;
-    private static final int EPOCHS = 10;
+    private static final int EPOCHS = 100;
     private static final String[] LABELS = {"bougainvillea", "daisy", "frangipani", "hibiscus", "rose", "sunflower", "zinnia"};
+    private static final String MODEL_PATH = "C:\\Users\\Saurav\\Documents\\Plant_Species_Identification\\model.zip";
 
     public static void main(String[] args) throws IOException {
         log.info("Starting the training process...");
@@ -35,75 +45,100 @@ public class Main {
         File trainData = new File(RESOURCES_FOLDER_PATH + "/train");
         File testData = new File(RESOURCES_FOLDER_PATH + "/test");
 
-        // Initialize the CNN model
-        CNNModel cnnModel = new CNNModel(0.0001);
+        // Define CNN configuration
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(123)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new org.nd4j.linalg.learning.config.Adam(0.0001))
+                .list()
+                .layer(0, new ConvolutionLayer.Builder(3, 3)
+                        .nIn(CHANNELS)
+                        .stride(1, 1)
+                        .activation(Activation.RELU)
+                        .nOut(32)
+                        .build())
+                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                        .kernelSize(2, 2)
+                        .stride(2, 2)
+                        .build())
+                .layer(2, new DenseLayer.Builder()
+                        .nOut(128)
+                        .activation(Activation.RELU)
+                        .build())
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .nOut(N_OUTCOMES)
+                        .activation(Activation.SOFTMAX)
+                        .build())
+                .setInputType(org.deeplearning4j.nn.conf.inputs.InputType.convolutional(HEIGHT, WIDTH, CHANNELS))
+                .build();
 
-        ActivationFunction RELU = new ReluActivationFunction();
-        ActivationFunction SOFTMAX = new SoftmaxActivationFunction();
-        // Add layers to the model
-        cnnModel.addLayer(new ConvolutionalLayer(2, 3, 1, 1, RELU));
-        cnnModel.addLayer(new MaxPoolingLayer(2, 1));
-        cnnModel.addLayer(new FullyConnectedLayer(48387, 128, RELU,0.0001));
-        cnnModel.addLayer(new FullyConnectedLayer(128, N_OUTCOMES, SOFTMAX,0.0001));
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
 
-        // Training Loop
+        model.setListeners(new ScoreIterationListener(10));
+
+        // Training loop
         for (int epoch = 0; epoch < EPOCHS; epoch++) {
             log.info("Epoch " + (epoch + 1) + " started.");
+            int totalTrainSamples = 0;
+            int correctTrainSamples = 0;
+
             for (String label : LABELS) {
                 File classFolder = new File(trainData, label);
                 if (classFolder.isDirectory()) {
-                    log.info("Training with class folder: " + classFolder.getName());
-                    INDArray input = loadImagesFromDirectory(classFolder, true);
-                    System.out.println(input.shapeInfoToString());
-                    INDArray output = createLabelsArray(label, (int) input.size(0));
-                    System.out.println(output.shapeInfoToString());
-                    cnnModel.train(input, output);
+                    DataSet dataSet = loadImagesAndLabels(classFolder, label);
+                    model.fit(dataSet);
+
+                    // Calculate training accuracy
+                    INDArray predictions = model.output(dataSet.getFeatures());
+                    INDArray labels = dataSet.getLabels();
+                    totalTrainSamples += labels.size(0);
+
+                    INDArray correctPredictions = predictions.argMax(1).eq(labels.argMax(1)).castTo(Nd4j.defaultFloatingPointType());
+                    correctTrainSamples += correctPredictions.sumNumber().intValue();
                 }
             }
-            log.info("Epoch " + (epoch + 1) + " completed.");
+
+            double trainingAccuracy = (double) correctTrainSamples / totalTrainSamples;
+            log.info("Epoch " + (epoch + 1) + " completed. Training accuracy: " + trainingAccuracy);
         }
 
+        // Save the trained model
+        log.info("Saving the trained model...");
+        model.save(new File(MODEL_PATH), true);
+
         // Evaluation
+        log.info("Evaluating model...");
         int totalSamples = 0;
         int correctSamples = 0;
+
         for (String label : LABELS) {
             File classFolder = new File(testData, label);
             if (classFolder.isDirectory()) {
-                log.info("Testing with class folder: " + classFolder.getName());
-                INDArray input = loadImagesFromDirectory(classFolder, false);
-                INDArray output = createLabelsArray(label, (int) input.size(0));
-                INDArray predictions = cnnModel.test(input, output);
+                DataSet dataSet = loadImagesAndLabels(classFolder, label);
+                INDArray predictions = model.output(dataSet.getFeatures());
+                INDArray labels = dataSet.getLabels();
+                totalSamples += labels.size(0);
 
-                totalSamples += input.size(0);
-                correctSamples += predictions.eq(output).castTo(Nd4j.defaultFloatingPointType()).sumNumber().intValue();
+                INDArray correctPredictions = predictions.argMax(1).eq(labels.argMax(1)).castTo(Nd4j.defaultFloatingPointType());
+                correctSamples += correctPredictions.sumNumber().intValue();
             }
         }
         log.info("Test accuracy: " + (double) correctSamples / totalSamples);
+
+        // Optionally, load the saved model
+        log.info("Loading the saved model...");
+        MultiLayerNetwork loadedModel = MultiLayerNetwork.load(new File(MODEL_PATH), true);
+        log.info("Loaded model successfully.");
     }
 
-    private static INDArray loadImagesFromDirectory(File folder, boolean augment) throws IOException {
+    private static DataSet loadImagesAndLabels(File folder, String label) throws IOException {
         List<INDArray> imagesList = new ArrayList<>();
+        List<INDArray> labelsList = new ArrayList<>();
         NativeImageLoader loader = new NativeImageLoader(HEIGHT, WIDTH, CHANNELS);
         ImagePreProcessingScaler scaler = new ImagePreProcessingScaler(0, 1);
 
-        for (File imgFile : folder.listFiles()) {
-            if (imgFile.isFile()) {
-                log.info("Loading image: " + imgFile.getName()); // Log the image name
-                BufferedImage originalImage = ImageIO.read(imgFile);
-                if (originalImage != null) {
-                    BufferedImage processedImage = augment ? augmentImage(originalImage) : originalImage;
-                    INDArray image = loader.asMatrix(processedImage);
-                    scaler.transform(image);
-                    imagesList.add(image);
-                }
-            }
-        }
-
-        // Stack all images into a single INDArray
-        return Nd4j.vstack(imagesList);
-    }
-
-    private static INDArray createLabelsArray(String label, int numSamples) {
         int labelIndex = -1;
         for (int i = 0; i < LABELS.length; i++) {
             if (LABELS[i].equals(label)) {
@@ -112,44 +147,20 @@ public class Main {
             }
         }
 
-        if (labelIndex == -1) {
-            throw new IllegalArgumentException("Invalid label: " + label);
+        for (File imgFile : folder.listFiles()) {
+            if (imgFile.isFile()) {
+                BufferedImage image = ImageIO.read(imgFile);
+                if (image != null) {
+                    INDArray input = loader.asMatrix(image);
+                    scaler.transform(input);
+                    imagesList.add(input);
+                    INDArray output = Nd4j.zeros(1, LABELS.length);
+                    output.putScalar(new int[]{0, labelIndex}, 1.0);
+                    labelsList.add(output);
+                }
+            }
         }
 
-        INDArray labels = Nd4j.zeros(numSamples, LABELS.length);
-        for (int i = 0; i < numSamples; i++) {
-            labels.putScalar(new int[]{i, labelIndex}, 1.0);
-        }
-
-        return labels;
-    }
-
-    private static BufferedImage augmentImage(BufferedImage image) {
-        // Example augmentation: flip the image horizontally
-        BufferedImage augmentedImage = Scalr.rotate(image, Scalr.Rotation.FLIP_HORZ);
-        // Additional augmentation: rotate the image randomly
-        double angle = new Random().nextDouble() * 360;
-        augmentedImage = rotateImage(augmentedImage, angle);
-        return augmentedImage;
-    }
-
-    private static BufferedImage rotateImage(BufferedImage image, double angle) {
-        double radians = Math.toRadians(angle);
-        double sin = Math.abs(Math.sin(radians));
-        double cos = Math.abs(Math.cos(radians));
-        int width = image.getWidth();
-        int height = image.getHeight();
-        int newWidth = (int) Math.floor(width * cos + height * sin);
-        int newHeight = (int) Math.floor(height * cos + width * sin);
-
-        BufferedImage rotatedImage = new BufferedImage(newWidth, newHeight, image.getType());
-        Graphics2D g2d = rotatedImage.createGraphics();
-        AffineTransform at = new AffineTransform();
-        at.translate((newWidth - width) / 2, (newHeight - height) / 2);
-        at.rotate(radians, width / 2, height / 2);
-        g2d.setTransform(at);
-        g2d.drawImage(image, 0, 0, null);
-        g2d.dispose();
-        return rotatedImage;
+        return new DataSet(Nd4j.vstack(imagesList), Nd4j.vstack(labelsList));
     }
 }
