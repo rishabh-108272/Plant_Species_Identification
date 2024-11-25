@@ -1,5 +1,6 @@
 package org.deeplearning.neuralnetworks;
 
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -27,25 +28,29 @@ public class CNNModel {
     public INDArray forward(INDArray input) {
         INDArray output = input;
 
-        System.out.println("Forward pass");
+//        System.out.println("Forward pass");
 
         for (Object layer : layers) {
             if (layer instanceof ConvolutionalLayer) {
                 ConvolutionalLayer convLayer = (ConvolutionalLayer) layer;
-                INDArray[] featureMaps = new INDArray[]{convLayer.forward(output)};
-                System.out.println("Feature Maps:"+ featureMaps[0].shapeInfoToString());
-                output = concatenateFeatureMaps(featureMaps);
+                output = convLayer.forward(output);
+//                INDArray[] featureMaps = new INDArray[]{convLayer.forward(output)};
+//                System.out.println("Feature Maps:"+ featureMaps[0].shapeInfoToString());
+//                output = concatenateFeatureMaps(featureMaps);
 
-                System.out.println("Output shape after convolutional layer forward pass: " + output.shapeInfoToString());
+//                System.out.println("Output shape after convolutional layer forward pass: " + output.shapeInfoToString());
             } else if (layer instanceof MaxPoolingLayer) {
                 MaxPoolingLayer poolLayer = (MaxPoolingLayer) layer;
                 output = poolLayer.forward(output);
+            } else if (layer instanceof Flatten) {
+                Flatten flattend = (Flatten) layer;
+                output = flattend.forward(output);
             } else if (layer instanceof FullyConnectedLayer) {
                 // Flatten the output before feeding it into the fully connected layer
 //                output = flatten(output);
 //                System.out.println("Shape of flattened output in 1D array: "+output.shapeInfoToString());
                 FullyConnectedLayer fcLayer = (FullyConnectedLayer) layer;
-                System.out.println("After forward pass of MaxPooling Layer:"+ output.shapeInfoToString());
+//                System.out.println("After forward pass of MaxPooling Layer:"+ output.shapeInfoToString());
                 output = fcLayer.forward(output);
             }
         }
@@ -73,10 +78,10 @@ public class CNNModel {
         // Reshape to have all feature maps concatenated along the appropriate dimension
         long[] concatenatedShape = originalShape.clone();
         concatenatedShape[0] = numMaps;  // Adjust the first dimension to reflect the number of feature maps
-        System.out.println("Original Shape:"+ Arrays.toString(concatenatedShape));
-        System.out.println("Shape of concatenated:"+concatenated.shapeInfoToString());
+//        System.out.println("Original Shape:"+ Arrays.toString(concatenatedShape));
+//        System.out.println("Shape of concatenated:"+concatenated.shapeInfoToString());
         concatenated = concatenated.reshape(48,3,128,128);
-        System.out.println("Shape of reshaped concatenated:"+concatenated.shapeInfoToString());
+//        System.out.println("Shape of reshaped concatenated:"+concatenated.shapeInfoToString());
         return concatenated;
     }
 
@@ -86,10 +91,8 @@ public class CNNModel {
     }
 
     public void backward(INDArray output, INDArray expectedOutput) {
-        // Calculate deltas for the last layer
-//        Object lastLayer = layers.get(layers.size() - 1);
-        INDArray error = expectedOutput.subi(output); // Compute the error
-        System.out.println("Backward pass");
+
+        INDArray error = expectedOutput.subi(output);
 
         // List to store gradients of all layers
         List<INDArray> gradients = new ArrayList<>();
@@ -97,15 +100,16 @@ public class CNNModel {
         // Start backpropagation
         for (int i = layers.size() - 1; i >= 0; i--) {
             Object layer = layers.get(i);
+//            Object prevlayer = layers.get(i-1);
 
             if (layer instanceof FullyConnectedLayer) {
                 FullyConnectedLayer fcLayer = (FullyConnectedLayer) layer;
                 INDArray nextLayerWeights = (i > 0 && layers.get(i - 1) instanceof FullyConnectedLayer)
-                        ? ((FullyConnectedLayer) layers.get(i - 1)).getWeights()
-                        : null;
-                System.out.println("nextLayerweights shape: "+nextLayerWeights.shapeInfoToString());
+                        ? ((FullyConnectedLayer) layers.get(i - 1)).getOutputs()
+                        : ((Flatten) layers.get(i-1)).getOutputs();
+//                System.out.println("nextLayerweights shape: "+nextLayerWeights.shapeInfoToString());
                 // Backward pass through fully connected layer
-                System.out.println("Starting fully connected backward pass");
+//                System.out.println("Starting fully connected backward pass");
                 INDArray grad = fcLayer.backward(error, nextLayerWeights);
                 gradients.add(grad);
                 error = grad;
@@ -114,16 +118,20 @@ public class CNNModel {
                 ConvolutionalLayer convLayer = (ConvolutionalLayer) layer;
                 INDArray grad = convLayer.backward(error, optimizer.getLearningRate()); // Receive a single gradient INDArray
                 gradients.add(grad);
-                error = aggregateError(grad); // Update this to handle backpropagation to the previous layer
+                error = grad;
+//                error = aggregateError(grad); // Update this to handle backpropagation to the previous layer
             } else if (layer instanceof MaxPoolingLayer) {
                 // Handle backpropagation through max pooling layers
                 MaxPoolingLayer poolLayer = (MaxPoolingLayer) layer;
                 error = poolLayer.backward(error); // Ensure this method is implemented in MaxPoolingLayer
+            } else if (layer instanceof Flatten) {
+                Flatten flatten = (Flatten) layer;
+                error = flatten.backward(error);
             }
         }
 
         // Update weights using gradients and optimizer
-        optimizer.step(getParameters(), gradients);
+//        optimizer.step(getParameters(), gradients);
         System.out.println("Whole Backward pass complete!!!");
     }
 
@@ -162,27 +170,27 @@ public class CNNModel {
     public void train(INDArray input, INDArray expectedOutput) {
         // Forward pass
         INDArray output = forward(input);
-        System.out.println("Shape of output in train: "+output.shapeInfoToString());
-        System.out.println("Shape of expected output:"+ expectedOutput.shapeInfoToString());
         // Backward pass
         backward(output, expectedOutput);
     }
 
     // Evaluate the model on test data
     public INDArray test(INDArray input, INDArray expectedOutput) {
-        INDArray output = forward(input);
+        return forward(input);
+//        INDArray output = forward(input);
+
         // Find the index of the maximum value in each row (the predicted class)
-        INDArray predictedClasses = Nd4j.argMax(output, 1);
-        INDArray actualClasses = Nd4j.argMax(expectedOutput, 1);
-
-        // Calculate the number of correct predictions
-        double correctPredictions = predictedClasses.eq(actualClasses).sumNumber().doubleValue();
-
-        // Calculate accuracy
-        double accuracy = correctPredictions / expectedOutput.rows();
-
-        // Return accuracy as an INDArray
-        return Nd4j.create(new double[]{accuracy});
+//        INDArray predictedClasses = Nd4j.argMax(output, 1);
+//        INDArray actualClasses = Nd4j.argMax(expectedOutput, 1);
+//
+//         Calculate the number of correct predictions
+//        double correctPredictions = predictedClasses.eq(actualClasses).castTo(DataType.FLOAT).sumNumber().doubleValue();
+//
+//         Calculate accuracy
+//        double accuracy = correctPredictions / expectedOutput.rows();
+//
+//         Return accuracy as an INDArray
+//        return Nd4j.create(new double[]{accuracy});
     }
 
     // Training loop for multiple epochs

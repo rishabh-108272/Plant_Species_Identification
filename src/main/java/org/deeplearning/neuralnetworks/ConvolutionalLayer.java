@@ -5,6 +5,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class ConvolutionalLayer {
@@ -14,6 +15,10 @@ public class ConvolutionalLayer {
     private int stride; // Stride for convolution
     private int padding; // Padding for convolution
     private ActivationFunction activationFunction;
+    INDArray Bias;
+    INDArray Weights;
+    int []WeightsShape;
+    INDArray input;
 
     public ConvolutionalLayer(int numFilters, int filterSize, int stride, int padding, ActivationFunction activationFunction) {
         this.numFilters = numFilters;
@@ -56,61 +61,104 @@ public class ConvolutionalLayer {
 
     // Forward pass for the convolutional layer
     public INDArray forward(INDArray input) {
+
+        System.out.println("[CONVOLUTIONAL FORWARD PASS]"+Arrays.toString(input.shape()));
+
+        this.input = input;
+        // Intiallize Parameters
+        if(WeightsShape == null)
+            WeightsShape = new int[]{filterSize,filterSize,(int) input.size(3),numFilters};
+        if(Bias == null)
+            Bias = Nd4j.rand(numFilters);
+        if(Weights == null)
+            Weights = Nd4j.rand(WeightsShape);
+
+        // Calculate Output Shape
         int batchSize = (int) input.size(0);
-        int inputChannels = (int) input.size(1);
-        int inputHeight = (int) input.size(2);
-        int inputWidth = (int) input.size(3);
+        int inputChannels = (int) input.size(3);
+        int inputHeight = (int) input.size(1);
+        int inputWidth = (int) input.size(2);
         int outputHeight = (inputHeight - filterSize + 2 * padding) / stride + 1;
         int outputWidth = (inputWidth - filterSize + 2 * padding) / stride + 1;
 
+        // Padd as per given Paddings
+        input = Nd4j.pad(input,new int[][]{
+                {0,0},
+                {padding, padding},
+                {padding, padding},
+                {0, 0}
+        });
+
         // Initialize output feature maps
-        INDArray output = Nd4j.zeros(batchSize, inputChannels, outputHeight, outputWidth);
-        System.out.println(output.shapeInfoToString());
-        System.out.println("paddedInput Shape: "+output.shapeInfoToString());
-        // Extract patches from the input
-        INDArray patches = Nd4j.create(new int[]{batchSize, inputChannels, filterSize, filterSize, outputHeight, outputWidth});
-        System.out.println("Patches Shape: "+patches.shapeInfoToString());
-        for (int i = 0; i < outputHeight- filterSize; i++) {
-            for (int j = 0; j < outputWidth- filterSize; j++) {
-                int startX = i * stride;
-                int startY = j * stride;
-                patches.put(new INDArrayIndex[]{
-                        NDArrayIndex.all(),
-                        NDArrayIndex.all(),
-                        NDArrayIndex.all(),
-                        NDArrayIndex.all(),
-                        NDArrayIndex.point(i),
-                        NDArrayIndex.point(j)
-                }, output.get(NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.interval(startX, startX + filterSize),
-                        NDArrayIndex.interval(startY, startY + filterSize)));
+        INDArray output = Nd4j.zeros(batchSize, outputHeight, outputWidth, numFilters);
+
+        // Convolution
+        for(int b = 0 ; b < batchSize; b++) {
+            for (int i = 0; i < outputHeight; i++) {
+                for (int j = 0; j < outputWidth; j++) {
+                    for(int k = 0; k < numFilters; k++) {
+                        int startX = i * stride;
+                        int startY = j * stride;
+
+                        INDArray patches = input.get(
+                                NDArrayIndex.point(b),
+                                NDArrayIndex.interval(startX, startX + WeightsShape[0]),
+                                NDArrayIndex.interval(startY, startY + WeightsShape[1]),
+                                NDArrayIndex.all()
+                        );
+                        INDArray CurrntKernal = this.Weights.get(
+                                NDArrayIndex.all(),
+                                NDArrayIndex.all(),
+                                NDArrayIndex.all(),
+                                NDArrayIndex.point(k)
+                        );
+                        output.putScalar(new int[]{b,i,j,k}, (Double) patches.mul(CurrntKernal).sumNumber());
+                    }
+                }
             }
         }
-
-        // Reshape patches to [batchSize * outputHeight * outputWidth, inputChannels * filterSize * filterSize]
-        patches = patches.permute(0, 4, 5, 1, 2, 3).reshape(batchSize * outputHeight * outputWidth, inputChannels * filterSize * filterSize);
-        System.out.println("Reshaped Patches Shape: " + patches.shapeInfoToString());
+//        for (int i = 0; i < outputHeight; i++) {
+//            for (int j = 0; j < outputWidth; j++) {
+//                int startX = i * stride;
+//                int startY = j * stride;
+//                patches.get();
+//                patches.put(new INDArrayIndex[]{
+//                        NDArrayIndex.all(),
+//                        NDArrayIndex.all(),
+//                        NDArrayIndex.all(),
+//                        NDArrayIndex.all(),
+//                        NDArrayIndex.point(i),
+//                        NDArrayIndex.point(j)
+//                }, output.get(NDArrayIndex.all(), NDArrayIndex.all(),
+//                        NDArrayIndex.interval(startX, startX + filterSize),
+//                        NDArrayIndex.interval(startY, startY + filterSize)));
+//            }
+//        }
+//
+//        // Reshape patches to [batchSize * outputHeight * outputWidth, inputChannels * filterSize * filterSize]
+//        patches = patches.permute(0, 4, 5, 1, 2, 3).reshape(batchSize * outputHeight * outputWidth, inputChannels * filterSize * filterSize);
+//        System.out.println("Reshaped Patches Shape: " + patches.shapeInfoToString());
 
 // Apply convolution filters
-        for (int f = 0; f < numFilters; f++) {
-            // Reshape the filter to [inputChannels * filterSize * filterSize, 1]
-            INDArray filter = filters[f].reshape(inputChannels * filterSize * filterSize, 1);
-            System.out.println("Reshaped Filter Shape: " + filter.shapeInfoToString());
+//        for (int f = 0; f < numFilters; f++) {
+//            // Reshape the filter to [inputChannels * filterSize * filterSize, 1]
+//            INDArray filter = filters[f].reshape(inputChannels * filterSize * filterSize, 1);
+////            System.out.println("Reshaped Filter Shape: " + filter.shapeInfoToString());
+//
+//            // Multiply the reshaped filter with the reshaped patches
+//            INDArray convolved = patches.mmul(filter);
+////            System.out.println("Convolved Shape: "+ convolved.shapeInfoToString());
+//            // Reshape the convolved output to [batchSize, outputHeight, outputWidth]
+//            convolved = convolved.reshape(batchSize, outputHeight, outputWidth);
+////            System.out.println("Convolved reshaped: "+ convolved.shapeInfoToString());
+//            convolved = activationFunction.activate(convolved);
+//
+//            // Place the convolved result in the output array
+//            output.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.point(f), NDArrayIndex.all(), NDArrayIndex.all()}, convolved);
+//        }
 
-            // Multiply the reshaped filter with the reshaped patches
-            INDArray convolved = patches.mmul(filter);
-            System.out.println("Convolved Shape: "+ convolved.shapeInfoToString());
-            // Reshape the convolved output to [batchSize, outputHeight, outputWidth]
-            convolved = convolved.reshape(batchSize, outputHeight, outputWidth);
-            System.out.println("Convolved reshaped: "+ convolved.shapeInfoToString());
-            convolved = activationFunction.activate(convolved);
-
-            // Place the convolved result in the output array
-            output.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.point(f), NDArrayIndex.all(), NDArrayIndex.all()}, convolved);
-        }
-
-        System.out.println("Shape of output: "+output.shapeInfoToString());
-        System.out.println("Convolutional Layer forward pass completed");
+        output = activationFunction.activate(output);
+        System.out.println("[CONVOLUTIONAL FORWARD PASS COMPLETED]"+Arrays.toString(output.shape()));
         return output;
     }
 
@@ -138,40 +186,83 @@ public class ConvolutionalLayer {
     }
 
     // Backward pass for the convolutional layer
-    public INDArray backward(INDArray error, double learningRate) {
-        INDArray inputGradients = Nd4j.zeros(error.shape());
-        INDArray[] filterGradients = new INDArray[numFilters];
+    public INDArray backward(INDArray dZ, double learningRate) {
 
-        for (int f = 0; f < numFilters; f++) {
-            filterGradients[f] = Nd4j.zeros(filters[f].shape());
+        System.out.println("[CONVOLUTIONAL BACKWARD PASS]"+Arrays.toString(dZ.shape()));
+        long[] inputShape = this.input.shape();
+        long[] dZShape = dZ.shape();
 
-            for (int b = 0; b < error.size(0); b++) {
-                for (int i = 0; i < error.size(2); i++) {
-                    for (int j = 0; j < error.size(3); j++) {
-                        int startX = i * stride;
-                        int startY = j * stride;
-                        INDArray subMatrix = error.get(
+        int batchSize = (int) inputShape[0];
+        int inputHeight = (int) inputShape[1];
+        int inputWidth = (int) inputShape[2];
+        int inChannels = (int) inputShape[3];
+        int dZHeight = (int) dZShape[1];
+        int dZWidth = (int) dZShape[2];
+        int outChannels = (int) dZShape[3];
+        int filterHeight = (int) this.WeightsShape[0];
+        int filterWidth = (int) this.WeightsShape[1];
+
+        // Pad the input
+        INDArray paddedInput = Nd4j.pad(input, new int[][]{
+                {0, 0},               // Batch dimension
+                {padding, padding},   // Height padding
+                {padding, padding},   // Width padding
+                {0, 0}                // Channel dimension
+        });
+
+        // Initialize gradients
+        INDArray dInput = Nd4j.zerosLike(paddedInput); // Gradient w.r.t input
+        INDArray dFilter = Nd4j.zerosLike(this.Weights); // Gradient w.r.t filter
+        INDArray dBias = dZ.sum(0, 1, 2); // Gradient w.r.t bias (sum over batch, height, and width)
+
+        // Backpropagation
+        for (int b = 0; b < batchSize; b++) {
+            for (int h = 0; h < dZHeight; h++) {
+                for (int w = 0; w < dZWidth; w++) {
+                    int hStart = h * stride;
+                    int hEnd = hStart + filterHeight;
+                    int wStart = w * stride;
+                    int wEnd = wStart + filterWidth;
+
+                    for (int c = 0; c < outChannels; c++) {
+                        // Slice input
+                        INDArray inputSlice = paddedInput.get(
                                 NDArrayIndex.point(b),
-                                NDArrayIndex.all(),
-                                NDArrayIndex.point(i),
-                                NDArrayIndex.point(j)
-                        ).reshape(filterSize, filterSize);
+                                NDArrayIndex.interval(hStart, hEnd),
+                                NDArrayIndex.interval(wStart, wEnd),
+                                NDArrayIndex.all()
+                        );
 
-                        filterGradients[f].addi(subMatrix.mul(error.getDouble(b, f, i, j)));
-                        inputGradients.get(
+                        // Gradient w.r.t. filter
+                        dFilter.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(c))
+                                .addi(inputSlice.mul(dZ.getDouble(b, h, w, c)));
+
+                        // Gradient w.r.t. input
+                        dInput.get(
                                 NDArrayIndex.point(b),
-                                NDArrayIndex.all(),
-                                NDArrayIndex.interval(startX, startX + filterSize),
-                                NDArrayIndex.interval(startY, startY + filterSize)
-                        ).addi(filters[f].mul(error.getDouble(b, f, i, j)));
+                                NDArrayIndex.interval(hStart, hEnd),
+                                NDArrayIndex.interval(wStart, wEnd),
+                                NDArrayIndex.all()
+                        ).addi(this.Weights.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(c))
+                                .mul(dZ.getDouble(b, h, w, c)));
                     }
                 }
             }
-
-            filters[f].subi(filterGradients[f].mul(learningRate));
         }
 
-        return inputGradients;
+        // Update weights and biases
+        this.Weights.subi(dFilter.mul(learningRate)); // Subtract gradient scaled by learning rate
+        this.Bias.subi(dBias.mul(learningRate));     // Subtract gradient scaled by learning rate
+
+        // Remove padding from dInput
+        dInput = dInput.get(
+                NDArrayIndex.all(),
+                NDArrayIndex.interval(padding, padding + inputHeight),
+                NDArrayIndex.interval(padding, padding + inputWidth),
+                NDArrayIndex.all()
+        );
+
+        return dInput;
     }
 
     public INDArray[] getFilters() {
